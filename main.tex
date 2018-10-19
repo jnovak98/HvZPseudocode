@@ -1,0 +1,144 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage{tikz}
+\usepackage{ wasysym }
+\usepackage{listings}
+\usepackage[margin=1in]{geometry}
+
+\title{Humans vs Zombies Pseudocode}
+\author{Jeremy Novak (jrn50) }
+\date{October 2018}
+
+\usepackage{natbib}
+\usepackage{graphicx}
+
+\begin{document}
+
+\maketitle
+\section{Data Structure Design}
+To implement the humans vs zombies code, I decided to store Zombie objects in an array of nodes, which I'll call $A$, where each node $N$ contains a Zombie, its x and y values, and a link to another node. Each index of the array represents a range of $n$ values, each separated by a distance of $d$. For example, a Zombie with $x = x_n$ would be put into $A[\lfloor x_n/d \rfloor]$. In addition, each node stored in an array index is at a higher position that all nodes it links to. The reasoning for this is that we need to have some list component so adding and removing elements is easier but this abstract data type also allows us to jump to a given x position, which must be done for a number of the operations required. Sorting by height in each index allows us to cut down on the runtime of Bomb.
+
+\section{Zombie$(x,y)$}
+Zombie$(x,y)$  returns  the  zombie  at  location  $(x, y)$  on  the  wall or null if there is no such zombie.
+\begin{enumerate}
+    \item Select the array index that a zombie with this x-value would be stored in, or $A[\lfloor x/d \rfloor]$. Refer to the node (or null) stored in this index as $N$.
+    \item \textbf{while} $N$ exists and $N_y\geq y$
+    \begin{enumerate}
+        \item \textbf{if} $N_x = x$ and $N_y = y$ \textbf{then} \textbf{return} $N_{zombie}$
+        \item \textbf{else} $N \leftarrow N_{next}$
+    \end{enumerate}
+    \item \textbf{return} $null$
+\end{enumerate}
+We know this algorithm works because it cycles through every zombie not below the specified height, in the array index that we know will store the zombie due to its x index. Average case runtime is $O(\frac{z}{n})$, where z is the number of zombies alive and n is number of array indices chosen.
+
+\section{Insert$(z,x,y)$}
+Insert$(z,x,y)$ inserts zombie $z$ at location $(x,y)$ on the wall. It returns an error if a zombie is already present at $(x,y)$ or if $z$ is null.
+\begin{enumerate}
+    \item \textbf{if} $z = null$ \textbf{then} \textbf{return} an error
+    \item Select the array index that a zombie with this x-value would be stored in, or $A[\lfloor x/d \rfloor]$. Refer to the node (or null) stored in this index as $N$.
+    \item \textbf{if} $N$ = $null$, $N \leftarrow$ a new node where $zombie \leftarrow z$, $x \leftarrow z_x$,$y \leftarrow z_y$, and $next \leftarrow null$. 
+    \item \textbf{loop} until break
+    \begin{enumerate}
+        \item \textbf{if} $N_x = x$ and $N_y = y$ \textbf{then} \textbf{return} an error
+        \item \textbf{if not} ($N_{next}$ exists and $N_{next_y}\geq y$) \textbf{then} \textbf{break}
+        \item \textbf{else} $N \leftarrow N_{next}$
+    \end{enumerate}
+    \item $N_{next}' \leftarrow$ a new node where $zombie \leftarrow z$, $x \leftarrow z_x$,$y \leftarrow z_y$, and $next \leftarrow N_{next}$. 
+\end{enumerate}
+We know insert works because it looks in the correct array index to store x and and cycles through every zombie above or equal to y to ensure there is not another zombie at (x,y). The infinite loop and break statement works to reduce repeated code which could not be abstracted away. Average case runtime is $O(\frac{z}{n})$, where z is the number of zombies alive and n is number of array indices chosen.
+
+\section{Delete$(x,y)$}
+Delete$(x,y)$  deletes  and  returns  the  zombie  at  $(x,y)$.  It  returns an error if there is no zombie at that location. 
+\begin{enumerate}
+    \item Select the array index that a zombie with this x-value would be stored in, or $A[\lfloor x/d \rfloor]$. Refer to the node (or null) stored in this index as $N$.
+    \item \textbf{if} $N_x = x$ and $N_y = y$
+    \begin{enumerate}
+        \item $Z \leftarrow N_{zombie}$
+        \item $N \leftarrow N_{next}$
+        \item \textbf{return} $Z$
+    \end{enumerate}
+    \item \textbf{loop} until break
+    \begin{enumerate}
+        \item \textbf{if not} ($N_{next}$ exists and $N_{next_y}\geq y$) \textbf{then} \textbf{break}
+        \item \textbf{if} $N_{next_x} = x$ and $N_{next_x} = y$
+        \begin{enumerate}
+            \item $Z \leftarrow N_{zombie}$
+            \item $N_{next} \leftarrow N_{next_{next}}$
+            \item \textbf{return} $Z$
+        \end{enumerate}
+        \item \textbf{else} $N \leftarrow N_{next}$
+    \end{enumerate}
+    \item \textbf{return} an error
+\end{enumerate}
+We know delete works for the same reason insert works, as much of the loop works the same way. Average case runtime is $O(\frac{z}{n})$, where z is the number of zombies alive and n is number of array indices chosen.
+
+\section{Javelin$(x_P)$}
+Javelin$(x_P)$ returns the $(x,y)$ coordinates of the zombie that would be killed by the javelin, or null if there is no zombie.The argument represents the player’s position. The javelin  kills  the  zombie  whose  horizontal  position  is  closest to that of the player, irrespective of height. 
+
+\begin{enumerate}
+    \item  $i_{left} \leftarrow \lfloor (x_P-\frac{d}{2})/d \rfloor$
+    \item  $i_{right} \leftarrow \lceil (x_P-\frac{d}{2})/d \rceil$
+    \item \textbf{while} $A[i_{left}]$ = $null$ and $A[i_{right}]$ = $null$
+    \begin{enumerate}
+        \item \textbf{if} $i_{left} = 0$ and and $i_{right} = |A|-1$, \textbf{then return} null
+        \item \textbf{if} $i_{left} > 0$ then decrement $i_{left}$
+        \item \textbf{if} $i_{right} < |A|-1$ then increment $i_{right}$
+    \end{enumerate}
+    \item $N_{left} \leftarrow A[i_{left}]$, $N_{right} \leftarrow A[i_{right}]$
+    \item \textbf{if} $N_{left}$ exists \textbf{then} $N_{closest} \leftarrow N_{left}$ \textbf{else} $N_{closest} \leftarrow N_{right}$ 
+    \item \textbf{while} $N_{left}$ exists
+    \begin{enumerate}
+        \item \textbf{if} $N_{left_x}$ is closer to $x_P$ than $N_{closest_x}$ \textbf{then} $N_{closest} \leftarrow N_{left}$
+        \item $N_{left} \leftarrow N_{left_{next}}$
+    \end{enumerate}
+    \item \textbf{while} $N_{right}$ exists
+    \begin{enumerate}
+        \item \textbf{if} $N_{right_x}$ is closer to $x_P$ than $N_{closest_x}$ \textbf{then} $N_{closest} \leftarrow N_{right}$
+        \item $N_{right} \leftarrow N_{right_{next}}$
+    \end{enumerate}
+\end{enumerate}
+Javelin works by finding the left and/or right closest not-null columns to $x_P$ and finding the closest node out of both columns. Average case runtime is $O(\frac{z}{n})$, if we expect an even distribution of zombies, but worst case runtime would be $O(z*n)$.
+
+\section{Arrow$(direction)$}
+Arrow$(direction)$ returns  the  $(x,y)$ coordinate of the zombie that would be killed by the arrow. The direction is either left or right. It returns null if there is no zombie. The arrow  kills  the  zombie  that  is  furthest  to  the  left  (or  the  right, at the player’s choosing), irrespective of his height.
+
+\begin{enumerate}
+    \item let $m$ and $n$ be two indices in A.
+    \item \textbf{if} direction = left \textbf{then} $m \leftarrow 0$ and $n \leftarrow |A| $
+    \item \textbf{else} $m \leftarrow |A|$ and $n \leftarrow 0$
+    \item \textbf{for} all integers $i$ in $m$ to $n$
+    \begin{enumerate}
+        \item \textbf{if} $A[i]$ exists 
+        \begin{enumerate}
+            \item $N_{closest}, $N$ \leftarrow A[i]$
+            \item \textbf{while} $N$ exists
+            \begin{enumerate}
+                \item \textbf{if} $N_x$ is closer to $(m*d)$ than $N_{closest_x}$ \textbf{then} $N_{closest} \leftarrow N$
+                \item $N \leftarrow N_{next}$
+            \end{enumerate}
+            \item \textbf{return} the coordinates of $N_{closest}$
+        \end{enumerate}
+    \end{enumerate}
+    \item \textbf{return} $null$
+\end{enumerate}
+Arrow works by starting at the furthest left/right column and moving in. The first not null column it finds, it finds the furthest from the center node and returns its coordinates. Average case runtime is $O(\frac{z}{n})$, if we expect an even distribution of zombies, but worst case runtime would be $O(z*n)$.
+
+\section{Bomb$(x_P,r)$}
+Bomb$(x_P, r)$ returns the $(x, y)$ coordinate of the zombie that would be killed by a bomb of range $r$ launched by a player at coordinate $x_P$. It returns $null$ if there is no zombie in range. The bomb  kills the zombie that is the highest on the  wall among all of the zombies within a given horizontal distance $r$ from the player’s position. In other words, if the player horizontal position is $x_P$, the bomb kills the highest zombie whose horizontal coordinate is between $x_P-r$ and $x_P+r$. 
+
+\begin{enumerate}
+    \item $N_{highest} \leftarrow null$
+    \item \textbf{for} all integers $i$ between $\lfloor (x_P-r)/d \rfloor$ and  $\lceil (x_P+r)/d \rceil$
+    \begin{enumerate}
+        \item \textbf{if} $A[i]$ exists 
+        \begin{enumerate}
+            \item $N \leftarrow A[i]$
+            \item \textbf{while} $|x_P-N_x| > r$ and $N$ exists, $N \leftarrow N_{next}$
+            \item \textbf{if} $N$ exists and either ($N_{highest} = null$ or $A[i]_y \geq N_{highest_y}$) \textbf{then} $N_{highest} \leftarrow A[i]$
+         \end{enumerate}
+    \end{enumerate}
+    \item \textbf{return} the coordinates of $N_{highest}$
+\end{enumerate}
+Bomb works by cycling through the range of all columns which could include nodes inside of the affected range and finding the one with the highest node. This is easy since the top stored node is always the highest node, but we also have to ensure that the top node is actually in the range. The average case runtime is roughly $O(r)$.
+
+\end{document}
